@@ -1,0 +1,9 @@
+fastapi>=0.110,<1
+uvicorn>=0.29,<1
+websockets>=12
+ccxt>=4.4,<5
+numpy>=1.26
+psutil>=5.9
+cryptography>=42
+requests>=2.31
+tqdm>=4.66
