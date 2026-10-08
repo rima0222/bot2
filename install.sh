@@ -40,7 +40,8 @@ warn() { printf '%s!!%s  %s\n' "$C_Y" "$C_0" "$*" >&2; }
 die()  { printf '%sxx%s  %s\n' "$C_R" "$C_0" "$*" >&2; exit 1; }
 trap 'rc=$?; [[ $BASHPID -eq $$ ]] && die "failed at line $LINENO (exit $rc). Fix the cause and run the script again; finished steps are skipped or resumed."' ERR
 
-usage() { sed -n "2,24p" "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; }
+SELF="${BASH_SOURCE[0]:-}"   # empty when the script is piped into bash (curl ... | bash)
+usage() { if [[ -n "$SELF" && -f "$SELF" ]]; then sed -n "2,24p" "$SELF" | sed 's/^# \{0,1\}//'; else echo "install.sh [--port N] [--host H] [--public] [--uninstall [--purge]]  (see README)"; fi; }
 
 # ----------------------------------------------------------------------------- helpers
 retry() {  # retry <times> <cmd...>
@@ -125,8 +126,10 @@ ensure_system_packages() {
 
 # ----------------------------------------------------------------------------- source / files
 locate_source() {
-  local here; here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-  if [[ -f "$here/main.py" && -f "$here/requirements.txt" ]]; then SRC="$here"; return; fi
+  if [[ -n "$SELF" ]]; then
+    local here; here="$(cd "$(dirname "$SELF")" && pwd)"
+    if [[ -f "$here/main.py" && -f "$here/requirements.txt" ]]; then SRC="$here"; return; fi
+  fi
   [[ -n "$BOT_ARCHIVE_URL" ]] || die "project files not found next to install.sh. Unpack the whole project first, or set BOT_ARCHIVE_URL=https://.../trading-bot.zip"
   local tmp; tmp="$(mktemp -d /tmp/bot-src.XXXXXX)"
   local arch="$tmp/archive"; log "Downloading $BOT_ARCHIVE_URL (resumable)"
@@ -379,4 +382,4 @@ main() {
   summary
 }
 
-if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then main "$@"; fi
+if [[ -z "$SELF" || "$SELF" == "$0" ]]; then main "$@"; fi
